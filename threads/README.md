@@ -2,7 +2,7 @@
 
 * `task test` - test in host OS, sends 1000 parallel requests to https://httpbin.org/delay/10
 * `task docker-test` - test in linux container, sends 1000 parallel requests to https://httpbin.org/delay/10
-* `test-local-sleeper` - test in docker-compose env, sends 1000 parallel requests to neighbour container
+* `task test-local-sleeper` - test in docker-compose env, sends 1000 parallel requests to neighbour container with 10s delay
 
 # Measurements
 
@@ -58,7 +58,7 @@ Linux docker container 2 CPU threads:
 --- PASS: TestThreads (12.81s)
 ```
 
-Linux docker container 2 CPU threads test with local sleeping server:
+Linux docker container 2 CPU threads, test with local sleeping server:
 ```
 === RUN   TestThreads
 2022/12/10 12:33:04 OS: linux Arch: amd64, GO_MAX_PROCS: 2, Requests: 1000 x http://sleeper:8080/?delay=10s
