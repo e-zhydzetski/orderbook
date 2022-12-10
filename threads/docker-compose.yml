@@ -12,6 +12,7 @@ services:
     build:
       context: .
       target: test
+    depends_on:
+      - sleeper
     environment:
-#      REQUEST_STR: "http://httpbin.org/delay/5"
-      REQUEST_STR: "http://sleeper:8080/?delay=5s"
+      REQUEST_STR: "http://sleeper:8080/?delay=10s"

@@ -1,10 +1,18 @@
 version: '3'
 
 tasks:
-  test-up:
+  test:
+    env:
+      REQUEST_STR: https://httpbin.org/delay/10
+      GOMAXPROCS: 2
+    cmds:
+      - go test -v ./...
+  docker-test:
+    cmds:
+      - docker build --rm --target test -t strips-tt/test .
+      - docker run --rm -e REQUEST_STR="https://httpbin.org/delay/10" -e GOMAXPROCS=2 strips-tt/test
+  test-local-sleeper:
     cmds:
       - docker-compose up --build -d
       - docker-compose logs -f test
-  test-down:
-    cmds:
       - docker-compose down -v

@@ -2,7 +2,9 @@
 
 # Task 1
 
-Check OS threads count in case of multiple long-lived outgoing network connections without explicit epoll.
+Check OS threads count in case of multiple long-lived outgoing network connections without explicit epoll.  
+
+## [Measurements](https://github.com/e-zhydzetski/strips-tt/tree/master/threads)
 
 # Task 2
 
