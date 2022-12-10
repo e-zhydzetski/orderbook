@@ -8,3 +8,7 @@ COPY . .
 
 FROM src AS test
 CMD ["go", "test", "-v", "./..."]
+
+FROM src AS sleeper
+ENTRYPOINT ["sleeper/sleeper"]
+RUN cd sleeper && GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o sleeper

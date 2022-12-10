@@ -1,0 +1,10 @@
+version: '3'
+
+tasks:
+  test-up:
+    cmds:
+      - docker-compose up --build -d
+      - docker-compose logs -f test
+  test-down:
+    cmds:
+      - docker-compose down -v
