@@ -6,7 +6,8 @@
 
 # Measurements
 
-Windows host 8 CPU threads with GOMAXPROCS=2:
+## Windows host 8 CPU threads with GOMAXPROCS=2
+
 ```
 === RUN   TestThreads
 2022/12/10 15:10:05 OS: windows Arch: amd64, GO_MAX_PROCS: 2, Requests: 1000 x https://httpbin.org/delay/10
@@ -36,7 +37,8 @@ Windows host 8 CPU threads with GOMAXPROCS=2:
 --- PASS: TestThreads (20.81s)
 ```
 
-Linux docker container 2 CPU threads:
+## Linux docker container 2 CPU threads
+
 ```
 === RUN   TestThreads
 2022/12/10 12:07:44 OS: linux Arch: amd64, GO_MAX_PROCS: 2, Requests: 1000 x https://httpbin.org/delay/10
@@ -58,7 +60,8 @@ Linux docker container 2 CPU threads:
 --- PASS: TestThreads (12.81s)
 ```
 
-Linux docker container 2 CPU threads, test with local sleeping server:
+## Linux docker container 2 CPU threads, test with local sleeping server
+
 ```
 === RUN   TestThreads
 2022/12/10 12:33:04 OS: linux Arch: amd64, GO_MAX_PROCS: 2, Requests: 1000 x http://sleeper:8080/?delay=10s

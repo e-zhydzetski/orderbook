@@ -4,7 +4,9 @@
 
 Check OS threads count in case of multiple long-lived outgoing network connections without explicit epoll.  
 
-## [Measurements](https://github.com/e-zhydzetski/strips-tt/tree/master/threads)
+* [Measurements](https://github.com/e-zhydzetski/strips-tt/tree/master/threads)
+* Useful links:
+  * [Post about Golang and system threads](https://www.sobyte.net/post/2021-06/golang-number-of-threads-in-the-running-program/)
 
 # Task 2
 
