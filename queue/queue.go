@@ -3,7 +3,7 @@ package queue
 import (
 	"sync"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/memtable"
 )
 
 type Node[T any] struct {

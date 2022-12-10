@@ -3,7 +3,7 @@ package tree
 import (
 	"sync"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/memtable"
 )
 
 func New[K any, V any](compareFunc func(a K, b K) int) *Tree[K, V] {

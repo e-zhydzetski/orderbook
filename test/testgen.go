@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook"
+	"github.com/e-zhydzetski/orderbook"
 )
 
 type Order struct {

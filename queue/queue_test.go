@@ -1,7 +1,7 @@
 package queue
 
 import (
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/memtable"
 	"testing"
 
 	"github.com/stretchr/testify/require"

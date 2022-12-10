@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
-	"github.com/e-zhydzetski/strips-tt/orderbook/skiplist"
+	"github.com/e-zhydzetski/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/skiplist"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
+	"github.com/e-zhydzetski/orderbook/queue"
 )
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.

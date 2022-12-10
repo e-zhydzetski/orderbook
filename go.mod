@@ -1,4 +1,4 @@
-module github.com/e-zhydzetski/strips-tt/orderbook
+module github.com/e-zhydzetski/orderbook
 
 go 1.19
 

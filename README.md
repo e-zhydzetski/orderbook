@@ -1,15 +1,15 @@
-# strips-tt
+# Order book
 
-## Task 1
+## Requirements
 
-> Check OS threads count in case of multiple long-lived outgoing network connections without explicit epoll.  
-
-* [Solution](https://github.com/e-zhydzetski/strips-tt/tree/master/threads)
-
-## Task 2
-
-> 1. Implement simple "matching engine" that can execute limit and market orders.
-> 2. The engine should have optimal store for orderbook (the structure of how you will store the orderbook, and which "indexes" you will implement on top of it the most interesting part)
-> 3. The engine should have "rollback" feature, where you can start matching some order finish it, and then rollback book to the previous state. Rollback algo should be something more effective than just duplicate orderbook in memory and switch between them.
-
-* [Solution](https://github.com/e-zhydzetski/strips-tt/tree/master/orderbook)
+* Functional:
+    * Execute [Market order](https://en.wikipedia.org/wiki/Order_(exchange)#Market_order)
+    * Execute [Limit order](https://en.wikipedia.org/wiki/Order_(exchange)#Limit_order)
+    * Limit order may be partially executed, no additional constraints
+    * Rollback last executed order? TODO clarify use-case
+* Non-functional:
+    * Low-latency
+    * Rollback without snapshotting
+* Out of scope
+    * Get [Market depth](https://en.wikipedia.org/wiki/Market_depth)
+    * Cancel order
