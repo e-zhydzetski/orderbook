@@ -49,8 +49,15 @@ func (t *Tree[K, V]) Set(key K, value V) {
 	}
 }
 
+type IteratorAction byte
+
+const (
+	IAStop IteratorAction = iota
+	IARemoveAndContinue
+)
+
 // return remove and continue flags
-func iter[K any, V any](node *Node[K, V], f func(key K, val *V, removeAndContinue func())) (bool, bool) {
+func iter[K any, V any](node *Node[K, V], f func(key K, val *V) IteratorAction) (bool, bool) {
 	if node == nil {
 		return true, true
 	}
@@ -62,11 +69,8 @@ func iter[K any, V any](node *Node[K, V], f func(key K, val *V, removeAndContinu
 		return false, false
 	}
 
-	remAndCont := false
-	f(node.Key, &node.Value, func() {
-		remAndCont = true
-	})
-	if !remAndCont {
+	action := f(node.Key, &node.Value)
+	if action != IARemoveAndContinue {
 		return false, false
 	}
 
@@ -91,7 +95,7 @@ func iter[K any, V any](node *Node[K, V], f func(key K, val *V, removeAndContinu
 
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
-func (t *Tree[K, V]) Iterate(f func(key K, val *V, removeAndContinue func())) {
+func (t *Tree[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
 	rem, _ := iter(t.root, f)
 	if rem {
 		t.root = nil

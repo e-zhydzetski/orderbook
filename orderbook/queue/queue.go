@@ -27,14 +27,18 @@ func (q *Queue[T]) Add(val T) {
 	q.Head = nn
 }
 
-func (q *Queue[T]) Iterate(f func(val *T, removeAndContinue func())) {
+type IteratorAction byte
+
+const (
+	IAStop IteratorAction = iota
+	IARemoveAndContinue
+)
+
+func (q *Queue[T]) Iterate(f func(val *T) IteratorAction) {
 	cur := q.Tail
 	for cur != nil {
-		remAndCont := false
-		f(&cur.Data, func() {
-			remAndCont = true
-		})
-		if !remAndCont {
+		action := f(&cur.Data)
+		if action != IARemoveAndContinue {
 			break
 		}
 		// remove from queue

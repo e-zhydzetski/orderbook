@@ -1,8 +1,9 @@
 package tree
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestTree(t *testing.T) {
@@ -15,16 +16,18 @@ func TestTree(t *testing.T) {
 		}
 		return 0
 	})
-	tree.Iterate(func(key int, val *int, removeAndContinue func()) {
+	tree.Iterate(func(key int, val *int) IteratorAction {
 		require.Fail(t, "tree should be empty")
+		return IAStop
 	})
 
 	tree.Set(1, 1)
 
 	v := 0
-	tree.Iterate(func(key int, val *int, removeAndContinue func()) {
+	tree.Iterate(func(key int, val *int) IteratorAction {
 		*val *= 10
 		v += *val
+		return IAStop
 	})
 	require.Equal(t, 10, v)
 
@@ -32,19 +35,21 @@ func TestTree(t *testing.T) {
 	tree.Set(3, 3)
 
 	v = 0
-	tree.Iterate(func(key int, val *int, removeAndContinue func()) {
+	tree.Iterate(func(key int, val *int) IteratorAction {
 		v += *val
+		return IAStop
 	})
 	require.Equal(t, 10, v)
 
 	v = 0
-	tree.Iterate(func(key int, val *int, removeAndContinue func()) {
+	tree.Iterate(func(key int, val *int) IteratorAction {
 		v += *val
-		removeAndContinue()
+		return IARemoveAndContinue
 	})
 	require.Equal(t, 15, v)
 
-	tree.Iterate(func(key int, val *int, removeAndContinue func()) {
+	tree.Iterate(func(key int, val *int) IteratorAction {
 		require.Fail(t, "tree should be empty")
+		return IAStop
 	})
 }

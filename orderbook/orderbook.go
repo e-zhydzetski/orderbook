@@ -1,10 +1,11 @@
 package orderbook
 
 import (
-	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
-	"github.com/e-zhydzetski/strips-tt/orderbook/tree"
 	"strings"
 	"time"
+
+	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
+	"github.com/e-zhydzetski/strips-tt/orderbook/tree"
 )
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
@@ -70,39 +71,37 @@ func (o *OrderBook) LimitAsk(id string, value Value, price Price) {
 		AcceptTime: time.Now(),
 	}
 	// emit OrderAccepted(id, OTAsk, value, price, now);
-	o.MarketBids.Iterate(func(order *MarketOrder, removeAndContinue func()) {
+	o.MarketBids.Iterate(func(order *MarketOrder) queue.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
 			// emit OrderChanged(order.ID, order.Value)
-			return
+			return queue.IAStop
 		}
 		// order.Value <= value
 		value -= order.Value
 		// emit OrderExecuted(order.ID)
-		removeAndContinue()
-		return
+		return queue.IARemoveAndContinue
 	})
 	if value == 0 {
 		// emit OrderExecuted(id)
 		return
 	}
-	o.LimitBids.Iterate(func(order LimitOrder, remainedValue *Value, removeAndContinue func()) {
+	o.LimitBids.Iterate(func(order LimitOrder, remainedValue *Value) tree.IteratorAction {
 		if order.Price < price {
-			return
+			return tree.IAStop
 		}
 
 		if *remainedValue > value {
 			*remainedValue -= value
 			value = 0
 			// emit OrderChanged(order.ID, order.Value)
-			return
+			return tree.IAStop
 		}
 		// remainedValue <= value
 		value -= *remainedValue
 		// emit OrderExecuted(order.ID)
-		removeAndContinue()
-		return // get next
+		return tree.IARemoveAndContinue
 	})
 	if value == 0 {
 		// emit OrderExecuted(id)
@@ -123,35 +122,33 @@ func (o *OrderBook) MarketAsk(id string, value Value) {
 		AcceptTime: time.Now(),
 	}
 	// emit OrderAccepted(id, OTAsk, value, price, now);
-	o.MarketBids.Iterate(func(order *MarketOrder, removeAndContinue func()) {
+	o.MarketBids.Iterate(func(order *MarketOrder) queue.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
 			// emit OrderChanged(order.ID, order.Value)
-			return
+			return queue.IAStop
 		}
 		// order.Value <= value
 		value -= order.Value
 		// emit OrderExecuted(order.ID)
-		removeAndContinue()
-		return
+		return queue.IARemoveAndContinue
 	})
 	if value == 0 {
 		// emit OrderExecuted(id)
 		return
 	}
-	o.LimitBids.Iterate(func(order LimitOrder, remainedValue *Value, removeAndContinue func()) {
+	o.LimitBids.Iterate(func(order LimitOrder, remainedValue *Value) tree.IteratorAction {
 		if *remainedValue > value {
 			*remainedValue -= value
 			value = 0
 			// emit OrderChanged(order.ID, order.Value)
-			return
+			return tree.IAStop
 		}
 		// remainedValue <= value
 		value -= *remainedValue
 		// emit OrderExecuted(order.ID)
-		removeAndContinue()
-		return // get next
+		return tree.IARemoveAndContinue
 	})
 	if value == 0 {
 		// emit OrderExecuted(id)

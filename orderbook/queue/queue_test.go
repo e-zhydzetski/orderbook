@@ -1,20 +1,25 @@
 package queue
 
-import "testing"
-import "github.com/stretchr/testify/require"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestQueue(t *testing.T) {
 	q := New[int]()
-	q.Iterate(func(val *int, removeAndContinue func()) {
+	q.Iterate(func(val *int) IteratorAction {
 		require.Fail(t, "queue should be empty")
+		return IAStop
 	})
 
 	q.Add(1)
 
 	k := 0
-	q.Iterate(func(val *int, removeAndContinue func()) {
+	q.Iterate(func(val *int) IteratorAction {
 		*val *= 10
 		k += *val
+		return IAStop
 	})
 	require.Equal(t, 10, k)
 
@@ -22,19 +27,21 @@ func TestQueue(t *testing.T) {
 	q.Add(3)
 
 	k = 0
-	q.Iterate(func(val *int, removeAndContinue func()) {
+	q.Iterate(func(val *int) IteratorAction {
 		k += *val
+		return IAStop
 	})
 	require.Equal(t, 10, k)
 
 	k = 0
-	q.Iterate(func(val *int, removeAndContinue func()) {
+	q.Iterate(func(val *int) IteratorAction {
 		k += *val
-		removeAndContinue()
+		return IARemoveAndContinue
 	})
 	require.Equal(t, 15, k)
 
-	q.Iterate(func(val *int, removeAndContinue func()) {
+	q.Iterate(func(val *int) IteratorAction {
 		require.Fail(t, "queue should be empty")
+		return IAStop
 	})
 }
