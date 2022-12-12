@@ -1,0 +1,9 @@
+version: '3'
+
+tasks:
+  lint:
+    cmds:
+      - golangci-lint.exe run --fix
+  test:
+    cmds:
+      - go test ./...
