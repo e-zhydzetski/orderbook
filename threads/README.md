@@ -1,12 +1,14 @@
-# Setup
+# Threads
+
+## Setup
 
 * `task test` - test in host OS, sends 1000 parallel requests to https://httpbin.org/delay/10
 * `task docker-test` - test in linux container, sends 1000 parallel requests to https://httpbin.org/delay/10
 * `task test-local-sleeper` - test in docker-compose env, sends 1000 parallel requests to neighbour container with 10s delay
 
-# Measurements
+## Measurements
 
-## Windows host 8 CPU threads with GOMAXPROCS=2
+### Windows host 8 CPU threads with GOMAXPROCS=2
 
 ```
 === RUN   TestThreads
@@ -37,7 +39,7 @@
 --- PASS: TestThreads (20.81s)
 ```
 
-## Linux docker container 2 CPU threads
+### Linux docker container 2 CPU threads
 
 ```
 === RUN   TestThreads
@@ -60,7 +62,7 @@
 --- PASS: TestThreads (12.81s)
 ```
 
-## Linux docker container 2 CPU threads, test with local sleeping server
+### Linux docker container 2 CPU threads, test with local sleeping server
 
 ```
 === RUN   TestThreads
@@ -80,3 +82,7 @@
 2022/12/10 12:33:15 Response codes: map[200:1000]
 --- PASS: TestThreads (10.22s)
 ```
+
+## Useful links
+
+* [Post about Golang and system threads](https://www.sobyte.net/post/2021-06/golang-number-of-threads-in-the-running-program/)
