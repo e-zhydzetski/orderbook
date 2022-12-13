@@ -2,9 +2,7 @@ package test
 
 import (
 	"math/rand"
-	"time"
-
-	"github.com/google/uuid"
+	"strconv"
 
 	"github.com/e-zhydzetski/strips-tt/orderbook"
 )
@@ -23,18 +21,24 @@ const (
 )
 
 //nolint:gosec // unsecure random is ok
-func GenerateOrders(count int) []Order {
-	rand.Seed(time.Now().UnixNano())
+func NewOrdersGenerator(seed int64) func() Order {
+	r := rand.New(rand.NewSource(seed))
 
-	var priceMean = 5000
+	probability := func(probInPercents uint8) bool {
+		return uint8(r.Intn(100)) < probInPercents
+	}
 
-	orders := make([]Order, count)
-	for i := 0; i < count; i++ {
+	priceMean := 5000
+	i := 0
+
+	return func() Order {
+		i++
+
 		order := Order{
-			ID:    uuid.New().String(),
-			Type:  orderbook.OTAsk,
+			ID:    strconv.Itoa(i),
+			Type:  orderbook.OTAsk, // default
 			Value: orderbook.Value(1 + rand.Intn(int(maxValue))),
-			Price: orderbook.PLMarket, // market price
+			Price: orderbook.PLMarket, // market price by default
 		}
 		if probability(50) {
 			order.Type = orderbook.OTBid
@@ -42,17 +46,11 @@ func GenerateOrders(count int) []Order {
 		if !probability(marketProb) {
 			order.Price = orderbook.PriceLimit(1 + int(rand.NormFloat64()*float64(priceDev)+float64(priceMean)))
 		}
-		orders[i] = order
 
 		if i%10 == 0 {
 			priceMean = 1 + int(rand.NormFloat64()*float64(priceDev)+float64(priceMean))
 		}
+
+		return order
 	}
-
-	return orders
-}
-
-//nolint:gosec // unsecure random is ok
-func probability(probInPercents uint8) bool {
-	return uint8(rand.Intn(100)) < probInPercents
 }

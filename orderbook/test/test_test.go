@@ -8,13 +8,8 @@ import (
 
 func BenchmarkOrderbook(b *testing.B) {
 	orderBook := orderbook.NewOrderBook()
-	orders := GenerateOrders(1000)
 
-	idx := 0
-	nextOrder := func() Order {
-		idx = (idx + 1) % len(orders)
-		return orders[idx]
-	}
+	nextOrder := NewOrdersGenerator(123)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
