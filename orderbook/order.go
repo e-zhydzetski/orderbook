@@ -6,7 +6,13 @@ import (
 
 type Value uint64
 
-type Price uint64
+type PriceLimit uint64
+
+func (p PriceLimit) IsMarket() bool {
+	return p == PLMarket
+}
+
+const PLMarket = PriceLimit(0)
 
 type OrderType byte
 
@@ -19,7 +25,7 @@ type LimitOrder struct {
 	ID         string
 	Type       OrderType
 	Value      Value
-	Price      Price
+	Price      PriceLimit
 	AcceptTime time.Time
 }
 
