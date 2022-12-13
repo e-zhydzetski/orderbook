@@ -1,14 +1,22 @@
 package tree
 
+import "sync"
+
 func New[K any, V any](compareFunc func(a K, b K) int) *Tree[K, V] {
 	return &Tree[K, V]{
 		compareFunc: compareFunc,
+		nodePool: &sync.Pool{
+			New: func() any {
+				return new(Node[K, V])
+			},
+		},
 	}
 }
 
 type Tree[K any, V any] struct {
 	compareFunc func(a K, b K) int
 	root        *Node[K, V]
+	nodePool    *sync.Pool
 }
 
 type Node[K any, V any] struct {
@@ -19,13 +27,17 @@ type Node[K any, V any] struct {
 }
 
 func (t *Tree[K, V]) Set(key K, value V) {
-	nn := &Node[K, V]{
-		Key:   key,
-		Value: value,
+	newNode := func() *Node[K, V] {
+		nn := t.nodePool.Get().(*Node[K, V])
+		nn.Key = key
+		nn.Value = value
+		nn.Right = nil
+		nn.Left = nil
+		return nn
 	}
 
 	if t.root == nil {
-		t.root = nn
+		t.root = newNode()
 		return
 	}
 	cur := t.root
@@ -33,13 +45,13 @@ func (t *Tree[K, V]) Set(key K, value V) {
 		switch t.compareFunc(key, cur.Key) {
 		case -1:
 			if cur.Left == nil {
-				cur.Left = nn
+				cur.Left = newNode()
 				return
 			}
 			cur = cur.Left
 		case 1:
 			if cur.Right == nil {
-				cur.Right = nn
+				cur.Right = newNode()
 				return
 			}
 			cur = cur.Right
@@ -57,28 +69,33 @@ const (
 )
 
 // return remove and continue flags
-func iter[K any, V any](node *Node[K, V], f func(key K, val *V) IteratorAction) (bool, bool) {
-	if node == nil {
-		return true, true
-	}
-	rem, cont := iter(node.Left, f)
-	if rem {
-		node.Left = nil
-	}
-	if !cont {
-		return false, false
+func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) IteratorAction) (bool, bool) {
+	if node.Left != nil {
+		rem, cont := t.iter(node.Left, f)
+		if rem {
+			t.nodePool.Put(node.Left)
+			node.Left = nil
+		}
+		if !cont {
+			return false, false
+		}
 	}
 
 	action := f(node.Key, &node.Value)
-	if action != IARemoveAndContinue {
+	if action == IAStop {
 		return false, false
 	}
 
 	// cur node should be removed, but its right child maybe not
 
-	rem, cont = iter(node.Right, f)
+	if node.Right == nil { // no right child - just remove cur note and continue
+		return true, true
+	}
+
+	rem, cont := t.iter(node.Right, f)
 	if rem {
 		// remove right child and cur node
+		t.nodePool.Put(node.Right)
 		node.Right = nil
 		return true, cont
 	}
@@ -89,6 +106,7 @@ func iter[K any, V any](node *Node[K, V], f func(key K, val *V) IteratorAction) 
 	node.Value = rc.Value
 	node.Left = rc.Left
 	node.Right = rc.Right
+	t.nodePool.Put(rc)
 
 	return false, cont
 }
@@ -96,8 +114,13 @@ func iter[K any, V any](node *Node[K, V], f func(key K, val *V) IteratorAction) 
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
 func (t *Tree[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
-	rem, _ := iter(t.root, f)
+	if t.root == nil {
+		return
+	}
+
+	rem, _ := t.iter(t.root, f)
 	if rem {
+		t.nodePool.Put(t.root)
 		t.root = nil
 	}
 }
