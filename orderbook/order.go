@@ -21,17 +21,10 @@ const (
 	OTAsk
 )
 
-type LimitOrder struct {
+type Order struct {
 	ID         string
 	Type       OrderType
 	Value      Value
 	Price      PriceLimit
-	AcceptTime time.Time
-}
-
-type MarketOrder struct {
-	ID         string
-	Type       OrderType
-	Value      Value
 	AcceptTime time.Time
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
-func lowToHighPrice(a LimitOrder, b LimitOrder) int {
+func lowToHighPrice(a Order, b Order) int {
 	if a.Price < b.Price {
 		return -1
 	}
@@ -26,7 +26,7 @@ func lowToHighPrice(a LimitOrder, b LimitOrder) int {
 }
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
-func highToLowPrice(a LimitOrder, b LimitOrder) int {
+func highToLowPrice(a Order, b Order) int {
 	if a.Price > b.Price {
 		return -1
 	}
@@ -44,19 +44,19 @@ func highToLowPrice(a LimitOrder, b LimitOrder) int {
 
 func NewOrderBook() *OrderBook {
 	return &OrderBook{
-		limitBids:  tree.New[LimitOrder, Value](highToLowPrice),
-		limitAsks:  tree.New[LimitOrder, Value](lowToHighPrice),
-		marketBids: queue.New[MarketOrder](),
-		marketAsks: queue.New[MarketOrder](),
+		limitBids:  tree.New[Order, Value](highToLowPrice),
+		limitAsks:  tree.New[Order, Value](lowToHighPrice),
+		marketBids: queue.New[Order](),
+		marketAsks: queue.New[Order](),
 		events:     NewEvents(100),
 	}
 }
 
 type OrderBook struct {
-	limitBids  *tree.Tree[LimitOrder, Value] // TODO tree of queues
-	limitAsks  *tree.Tree[LimitOrder, Value] // TODO tree of queues
-	marketBids *queue.Queue[MarketOrder]
-	marketAsks *queue.Queue[MarketOrder]
+	limitBids  *tree.Tree[Order, Value] // TODO tree of queues, or skip list
+	limitAsks  *tree.Tree[Order, Value] // TODO tree of queues, or skip list
+	marketBids *queue.Queue[Order]
+	marketAsks *queue.Queue[Order]
 	events     *Events
 }
 
@@ -70,7 +70,7 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketBids.Iterate(func(order *MarketOrder) queue.IteratorAction {
+	o.marketBids.Iterate(func(order *Order) queue.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
@@ -93,7 +93,7 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitBids.Iterate(func(order LimitOrder, remainedValue *Value) tree.IteratorAction {
+	o.limitBids.Iterate(func(order Order, remainedValue *Value) tree.IteratorAction {
 		if !price.IsMarket() {
 			if order.Price < price {
 				return tree.IAStop
@@ -127,22 +127,16 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		Value: value,
 	})
 
+	newOrder := Order{
+		ID:         id,
+		Type:       OTAsk,
+		Value:      value,
+		Price:      price,
+		AcceptTime: now,
+	}
 	if price.IsMarket() {
-		newOrder := MarketOrder{
-			ID:         id,
-			Type:       OTAsk,
-			Value:      value,
-			AcceptTime: now,
-		}
 		o.marketAsks.Add(newOrder)
 	} else {
-		newOrder := LimitOrder{
-			ID:         id,
-			Type:       OTAsk,
-			Value:      value,
-			Price:      price,
-			AcceptTime: now,
-		}
 		o.limitAsks.Set(newOrder, value)
 	}
 	// o.events.PrintAll()
@@ -158,7 +152,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketAsks.Iterate(func(order *MarketOrder) queue.IteratorAction {
+	o.marketAsks.Iterate(func(order *Order) queue.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
@@ -181,7 +175,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitAsks.Iterate(func(order LimitOrder, remainedValue *Value) tree.IteratorAction {
+	o.limitAsks.Iterate(func(order Order, remainedValue *Value) tree.IteratorAction {
 		if !price.IsMarket() {
 			if order.Price < price {
 				return tree.IAStop
@@ -215,22 +209,16 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		Value: value,
 	})
 
+	newOrder := Order{
+		ID:         id,
+		Type:       OTBid,
+		Value:      value,
+		Price:      price,
+		AcceptTime: now,
+	}
 	if price.IsMarket() {
-		newOrder := MarketOrder{
-			ID:         id,
-			Type:       OTBid,
-			Value:      value,
-			AcceptTime: now,
-		}
 		o.marketBids.Add(newOrder)
 	} else {
-		newOrder := LimitOrder{
-			ID:         id,
-			Type:       OTBid,
-			Value:      value,
-			Price:      price,
-			AcceptTime: now,
-		}
 		o.limitBids.Set(newOrder, value)
 	}
 	// o.events.PrintAll()
