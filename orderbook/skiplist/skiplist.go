@@ -1,6 +1,7 @@
 package skiplist
 
 import (
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
 	"math/rand"
 	"sync"
 )
@@ -64,16 +65,9 @@ func (s *SkipList[K, V]) Set(key K, value V) {
 	}
 }
 
-type IteratorAction byte
-
-const (
-	IAStop IteratorAction = iota
-	IARemoveAndContinue
-)
-
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
-func (s *SkipList[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
+func (s *SkipList[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) {
 	if len(s.head.Next) == 0 {
 		return
 	}
@@ -82,7 +76,7 @@ func (s *SkipList[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
 		cur := s.head.Next[0]
 
 		action := f(cur.Key, &cur.Value)
-		if action == IAStop {
+		if action == memtable.IAStop {
 			break
 		}
 

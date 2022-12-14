@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
 	"math/rand"
 	"testing"
 	"time"
@@ -18,18 +19,18 @@ func TestTree(t *testing.T) {
 		}
 		return 0
 	})
-	tree.Iterate(func(key int, val *int) IteratorAction {
+	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		require.Fail(t, "tree should be empty")
-		return IAStop
+		return memtable.IAStop
 	})
 
 	tree.Set(-1, -1)
 
 	var vals []int
-	tree.Iterate(func(key int, val *int) IteratorAction {
+	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		*val *= 10
 		vals = append(vals, *val)
-		return IAStop
+		return memtable.IAStop
 	})
 	require.Equal(t, []int{-10}, vals)
 
@@ -40,22 +41,22 @@ func TestTree(t *testing.T) {
 	tree.Set(2, 2)
 
 	vals = vals[:0]
-	tree.Iterate(func(key int, val *int) IteratorAction {
+	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		vals = append(vals, *val)
-		return IAStop
+		return memtable.IAStop
 	})
 	require.Equal(t, []int{-3}, vals)
 
 	vals = vals[:0]
-	tree.Iterate(func(key int, val *int) IteratorAction {
+	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		vals = append(vals, *val)
-		return IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	require.Equal(t, []int{-3, -2, -10, 1, 2, 3}, vals) // value -10 has -1 key, order by key
 
-	tree.Iterate(func(key int, val *int) IteratorAction {
+	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		require.Fail(t, "tree should be empty")
-		return IAStop
+		return memtable.IAStop
 	})
 }
 

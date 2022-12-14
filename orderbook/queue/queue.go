@@ -1,6 +1,9 @@
 package queue
 
-import "sync"
+import (
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"sync"
+)
 
 type Node[T any] struct {
 	Data T
@@ -40,18 +43,11 @@ func (q *Queue[T]) Add(val T) {
 	q.Head = q.Head.Next
 }
 
-type IteratorAction byte
-
-const (
-	IAStop IteratorAction = iota
-	IARemoveAndContinue
-)
-
-func (q *Queue[T]) Iterate(f func(val *T) IteratorAction) {
+func (q *Queue[T]) Iterate(f func(val *T) memtable.IteratorAction) {
 	cur := q.Tail
 	for cur != nil {
 		action := f(&cur.Data)
-		if action == IAStop {
+		if action == memtable.IAStop {
 			break
 		}
 		// remove from queue

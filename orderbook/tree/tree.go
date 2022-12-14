@@ -1,6 +1,9 @@
 package tree
 
-import "sync"
+import (
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"sync"
+)
 
 func New[K any, V any](compareFunc func(a K, b K) int) *Tree[K, V] {
 	return &Tree[K, V]{
@@ -61,15 +64,8 @@ func (t *Tree[K, V]) Set(key K, value V) {
 	}
 }
 
-type IteratorAction byte
-
-const (
-	IAStop IteratorAction = iota
-	IARemoveAndContinue
-)
-
 // return remove and continue flags
-func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) IteratorAction) (bool, bool) {
+func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) memtable.IteratorAction) (bool, bool) {
 	if node.Left != nil {
 		rem, cont := t.iter(node.Left, f)
 		if rem {
@@ -82,7 +78,7 @@ func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) IteratorAction
 	}
 
 	action := f(node.Key, &node.Value)
-	if action == IAStop {
+	if action == memtable.IAStop {
 		return false, false
 	}
 
@@ -113,7 +109,7 @@ func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) IteratorAction
 
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
-func (t *Tree[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
+func (t *Tree[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) {
 	if t.root == nil {
 		return
 	}

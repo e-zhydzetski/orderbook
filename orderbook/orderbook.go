@@ -1,11 +1,12 @@
 package orderbook
 
 import (
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/strips-tt/orderbook/tree"
 	"strings"
 	"time"
 
 	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
-	"github.com/e-zhydzetski/strips-tt/orderbook/tree"
 )
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
@@ -44,8 +45,12 @@ func highToLowPrice(a Order, b Order) int {
 
 func NewOrderBook() *OrderBook {
 	return &OrderBook{
-		limitBids:  tree.New[Order, Value](highToLowPrice),
-		limitAsks:  tree.New[Order, Value](lowToHighPrice),
+		// limitBids:  skiplist.New[Order, Value](10, highToLowPrice),
+		limitBids: tree.New[Order, Value](highToLowPrice),
+
+		// limitAsks:  skiplist.New[Order, Value](10, lowToHighPrice),
+		limitAsks: tree.New[Order, Value](lowToHighPrice),
+
 		marketBids: queue.New[Order](),
 		marketAsks: queue.New[Order](),
 		events:     NewEvents(100),
@@ -53,10 +58,10 @@ func NewOrderBook() *OrderBook {
 }
 
 type OrderBook struct {
-	limitBids  *tree.Tree[Order, Value] // TODO tree of queues, or skip list
-	limitAsks  *tree.Tree[Order, Value] // TODO tree of queues, or skip list
-	marketBids *queue.Queue[Order]
-	marketAsks *queue.Queue[Order]
+	limitBids  memtable.MemTable[Order, Value] // TODO tree of queues, or skip list
+	limitAsks  memtable.MemTable[Order, Value] // TODO tree of queues, or skip list
+	marketBids memtable.Queue[Order]
+	marketAsks memtable.Queue[Order]
 	events     *Events
 }
 
@@ -70,7 +75,7 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketBids.Iterate(func(order *Order) queue.IteratorAction {
+	o.marketBids.Iterate(func(order *Order) memtable.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
@@ -78,14 +83,14 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 				ID:    order.ID,
 				Value: order.Value,
 			})
-			return queue.IAStop
+			return memtable.IAStop
 		}
 		// order.Value <= value
 		value -= order.Value
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
-		return queue.IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{
@@ -93,10 +98,10 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitBids.Iterate(func(order Order, remainedValue *Value) tree.IteratorAction {
+	o.limitBids.Iterate(func(order Order, remainedValue *Value) memtable.IteratorAction {
 		if !price.IsMarket() {
 			if order.Price < price {
-				return tree.IAStop
+				return memtable.IAStop
 			}
 		}
 
@@ -107,14 +112,14 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 				ID:    order.ID,
 				Value: order.Value,
 			})
-			return tree.IAStop
+			return memtable.IAStop
 		}
 		// remainedValue <= value
 		value -= *remainedValue
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
-		return tree.IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{
@@ -152,7 +157,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketAsks.Iterate(func(order *Order) queue.IteratorAction {
+	o.marketAsks.Iterate(func(order *Order) memtable.IteratorAction {
 		if order.Value > value {
 			order.Value -= value
 			value = 0
@@ -160,14 +165,14 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 				ID:    order.ID,
 				Value: order.Value,
 			})
-			return queue.IAStop
+			return memtable.IAStop
 		}
 		// order.Value <= value
 		value -= order.Value
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
-		return queue.IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{
@@ -175,10 +180,10 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitAsks.Iterate(func(order Order, remainedValue *Value) tree.IteratorAction {
+	o.limitAsks.Iterate(func(order Order, remainedValue *Value) memtable.IteratorAction {
 		if !price.IsMarket() {
 			if order.Price < price {
-				return tree.IAStop
+				return memtable.IAStop
 			}
 		}
 
@@ -189,14 +194,14 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 				ID:    order.ID,
 				Value: order.Value,
 			})
-			return tree.IAStop
+			return memtable.IAStop
 		}
 		// remainedValue <= value
 		value -= *remainedValue
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
-		return tree.IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{

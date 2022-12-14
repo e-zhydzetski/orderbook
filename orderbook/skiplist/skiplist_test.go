@@ -2,6 +2,7 @@ package skiplist
 
 import (
 	"fmt"
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
 	"github.com/stretchr/testify/require"
 	"math/rand"
 	"testing"
@@ -18,18 +19,18 @@ func TestSkipList(t *testing.T) {
 		}
 		return 0
 	})
-	list.Iterate(func(key int, val *int) IteratorAction {
+	list.Iterate(func(key int, val *int) memtable.IteratorAction {
 		require.Fail(t, "list should be empty")
-		return IAStop
+		return memtable.IAStop
 	})
 
 	list.Set(-1, -1)
 
 	var vals []int
-	list.Iterate(func(key int, val *int) IteratorAction {
+	list.Iterate(func(key int, val *int) memtable.IteratorAction {
 		*val *= 10
 		vals = append(vals, *val)
-		return IAStop
+		return memtable.IAStop
 	})
 	require.Equal(t, []int{-10}, vals)
 
@@ -40,22 +41,22 @@ func TestSkipList(t *testing.T) {
 	list.Set(2, 2)
 
 	vals = vals[:0]
-	list.Iterate(func(key int, val *int) IteratorAction {
+	list.Iterate(func(key int, val *int) memtable.IteratorAction {
 		vals = append(vals, *val)
-		return IAStop
+		return memtable.IAStop
 	})
 	require.Equal(t, []int{-3}, vals)
 
 	vals = vals[:0]
-	list.Iterate(func(key int, val *int) IteratorAction {
+	list.Iterate(func(key int, val *int) memtable.IteratorAction {
 		vals = append(vals, *val)
-		return IARemoveAndContinue
+		return memtable.IARemoveAndContinue
 	})
 	require.Equal(t, []int{-3, -2, -10, 1, 2, 3}, vals) // value -10 has -1 key, order by key
 
-	list.Iterate(func(key int, val *int) IteratorAction {
+	list.Iterate(func(key int, val *int) memtable.IteratorAction {
 		require.Fail(t, "list should be empty")
-		return IAStop
+		return memtable.IAStop
 	})
 }
 
