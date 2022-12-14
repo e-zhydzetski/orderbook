@@ -6,15 +6,18 @@ import (
 )
 
 func New[K any, V any](maxHeight int, compareFunc func(a K, b K) int) *SkipList[K, V] {
+	nodePool := &sync.Pool{
+		New: func() any {
+			return &Node[K, V]{
+				Next: make([]*Node[K, V], 0, maxHeight+1),
+			}
+		},
+	}
 	return &SkipList[K, V]{
 		maxRandHeightMask: 2 << (maxHeight - 1),
 		compareFunc:       compareFunc,
-		head:              new(Node[K, V]),
-		nodePool: &sync.Pool{
-			New: func() any {
-				return new(Node[K, V])
-			},
-		},
+		head:              nodePool.Get().(*Node[K, V]),
+		nodePool:          nodePool,
 	}
 }
 
@@ -44,7 +47,7 @@ func (s *SkipList[K, V]) Set(key K, value V) {
 	nn := s.nodePool.Get().(*Node[K, V])
 	nn.Key = key
 	nn.Value = value
-	nn.Next = make([]*Node[K, V], level+1)
+	nn.Next = nn.Next[:level+1]
 
 	cur := s.head
 	for i := len(s.head.Next) - 1; i >= 0; i-- {
