@@ -5,13 +5,11 @@ import (
 	"sync"
 )
 
-const maxHeight = 10
-const randHeight = 1024 // 2 ^ maxHeight
-
-func New[K any, V any](compareFunc func(a K, b K) int) *SkipList[K, V] {
+func New[K any, V any](maxHeight int, compareFunc func(a K, b K) int) *SkipList[K, V] {
 	return &SkipList[K, V]{
-		compareFunc: compareFunc,
-		head:        new(Node[K, V]),
+		maxRandHeightMask: 2 << (maxHeight - 1),
+		compareFunc:       compareFunc,
+		head:              new(Node[K, V]),
 		nodePool: &sync.Pool{
 			New: func() any {
 				return new(Node[K, V])
@@ -21,9 +19,10 @@ func New[K any, V any](compareFunc func(a K, b K) int) *SkipList[K, V] {
 }
 
 type SkipList[K any, V any] struct {
-	compareFunc func(a K, b K) int
-	head        *Node[K, V]
-	nodePool    *sync.Pool
+	maxRandHeightMask int
+	compareFunc       func(a K, b K) int
+	head              *Node[K, V]
+	nodePool          *sync.Pool
 }
 
 type Node[K any, V any] struct {
@@ -34,7 +33,7 @@ type Node[K any, V any] struct {
 
 func (s *SkipList[K, V]) Set(key K, value V) {
 	level := 0
-	for r := rand.Intn(randHeight); r&1 == 1; r >>= 1 {
+	for r := rand.Intn(s.maxRandHeightMask); r&1 == 1; r >>= 1 {
 		level++
 	}
 	if level >= len(s.head.Next) {

@@ -1,13 +1,14 @@
 package skiplist
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 )
 
 func TestTree(t *testing.T) {
-	list := New[int, int](func(a int, b int) int {
+	list := New[int, int](10, func(a int, b int) int {
 		if a < b {
 			return -1
 		}
@@ -26,8 +27,8 @@ func TestTree(t *testing.T) {
 }
 
 func BenchmarkSet(b *testing.B) {
-	newSkipList := func() *SkipList[int, int] {
-		return New[int, int](func(a int, b int) int {
+	newSkipList := func(maxHeight int) *SkipList[int, int] {
+		return New[int, int](maxHeight, func(a int, b int) int {
 			if a < b {
 				return -1
 			}
@@ -81,15 +82,19 @@ func BenchmarkSet(b *testing.B) {
 		},
 	}
 
-	for _, test := range tests {
-		b.Run(test.name, func(b *testing.B) {
-			list := newSkipList()
-			next := test.generator()
-			b.ResetTimer()
+	for _, maxHeight := range []int{1, 2, 4, 8, 16, 32} {
+		b.Run(fmt.Sprintf("mh-%d", maxHeight), func(b *testing.B) {
+			for _, test := range tests {
+				b.Run(test.name, func(b *testing.B) {
+					list := newSkipList(maxHeight)
+					next := test.generator()
+					b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
-				x := next()
-				list.Set(x, x)
+					for i := 0; i < b.N; i++ {
+						x := next()
+						list.Set(x, x)
+					}
+				})
 			}
 		})
 	}

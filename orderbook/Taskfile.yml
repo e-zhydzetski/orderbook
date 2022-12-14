@@ -9,4 +9,6 @@ tasks:
       - go test ./...
   bench:
     cmds:
-      - cd test && go test -bench=. -benchmem
+      - cd skiplist && go test -bench=. -benchmem -benchtime=10000x
+      - cd tree && go test -bench=. -benchmem -benchtime=10000x
+      - cd test && go test -bench=. -benchmem -benchtime=100000x
