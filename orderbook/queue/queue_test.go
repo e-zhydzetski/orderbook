@@ -14,32 +14,35 @@ func TestQueue(t *testing.T) {
 		return memtable.IAStop
 	})
 
-	q.Add(1)
+	q.Add(-1)
 
-	k := 0
+	var vals []int
 	q.Iterate(func(val *int) memtable.IteratorAction {
 		*val *= 10
-		k += *val
+		vals = append(vals, *val)
 		return memtable.IAStop
 	})
-	require.Equal(t, 10, k)
+	require.Equal(t, []int{-10}, vals)
 
-	q.Add(2)
+	q.Add(-2)
+	q.Add(-3)
+	q.Add(1)
 	q.Add(3)
+	q.Add(2)
 
-	k = 0
+	vals = vals[:0]
 	q.Iterate(func(val *int) memtable.IteratorAction {
-		k += *val
+		vals = append(vals, *val)
 		return memtable.IAStop
 	})
-	require.Equal(t, 10, k)
+	require.Equal(t, []int{-10}, vals)
 
-	k = 0
+	vals = vals[:0]
 	q.Iterate(func(val *int) memtable.IteratorAction {
-		k += *val
+		vals = append(vals, *val)
 		return memtable.IARemoveAndContinue
 	})
-	require.Equal(t, 15, k)
+	require.Equal(t, []int{-10, -2, -3, 1, 3, 2}, vals)
 
 	q.Iterate(func(val *int) memtable.IteratorAction {
 		require.Fail(t, "queue should be empty")
