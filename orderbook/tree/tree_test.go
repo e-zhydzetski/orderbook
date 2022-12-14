@@ -23,32 +23,35 @@ func TestTree(t *testing.T) {
 		return IAStop
 	})
 
-	tree.Set(1, 1)
+	tree.Set(-1, -1)
 
-	v := 0
+	var vals []int
 	tree.Iterate(func(key int, val *int) IteratorAction {
 		*val *= 10
-		v += *val
+		vals = append(vals, *val)
 		return IAStop
 	})
-	require.Equal(t, 10, v)
+	require.Equal(t, []int{-10}, vals)
 
-	tree.Set(2, 2)
+	tree.Set(-2, -2)
+	tree.Set(-3, -3)
+	tree.Set(1, 1)
 	tree.Set(3, 3)
+	tree.Set(2, 2)
 
-	v = 0
+	vals = vals[:0]
 	tree.Iterate(func(key int, val *int) IteratorAction {
-		v += *val
+		vals = append(vals, *val)
 		return IAStop
 	})
-	require.Equal(t, 10, v)
+	require.Equal(t, []int{-3}, vals)
 
-	v = 0
+	vals = vals[:0]
 	tree.Iterate(func(key int, val *int) IteratorAction {
-		v += *val
+		vals = append(vals, *val)
 		return IARemoveAndContinue
 	})
-	require.Equal(t, 15, v)
+	require.Equal(t, []int{-3, -2, -10, 1, 2, 3}, vals) // value -10 has -1 key, order by key
 
 	tree.Iterate(func(key int, val *int) IteratorAction {
 		require.Fail(t, "tree should be empty")

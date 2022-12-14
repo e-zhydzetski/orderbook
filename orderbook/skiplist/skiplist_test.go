@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestTree(t *testing.T) {
+func TestSkipList(t *testing.T) {
 	list := New[int, int](10, func(a int, b int) int {
 		if a < b {
 			return -1
