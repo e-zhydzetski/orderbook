@@ -36,6 +36,7 @@ type Node[K any, V any] struct {
 
 func (s *SkipList[K, V]) Set(key K, value V) {
 	level := 0
+	//nolint:gosec // math random is OK
 	for r := rand.Intn(s.maxRandHeightMask); r&1 == 1; r >>= 1 {
 		level++
 	}
@@ -60,5 +61,34 @@ func (s *SkipList[K, V]) Set(key K, value V) {
 			nn.Next[i] = cur.Next[i]
 			cur.Next[i] = nn
 		}
+	}
+}
+
+type IteratorAction byte
+
+const (
+	IAStop IteratorAction = iota
+	IARemoveAndContinue
+)
+
+// Iterate tree elements from min to max key, next element may be accessed only after current remove
+// element value is mutable
+func (s *SkipList[K, V]) Iterate(f func(key K, val *V) IteratorAction) {
+	if len(s.head.Next) == 0 {
+		return
+	}
+
+	for s.head.Next[0] != nil {
+		cur := s.head.Next[0]
+
+		action := f(cur.Key, &cur.Value)
+		if action == IAStop {
+			break
+		}
+
+		// remove cur and get next
+		copy(s.head.Next, cur.Next)
+
+		s.nodePool.Put(cur)
 	}
 }

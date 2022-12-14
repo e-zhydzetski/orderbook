@@ -65,3 +65,7 @@ linters:
     - unused
     - whitespace
     - gochecknoglobals
+
+run:
+  skip-files:
+    - "_test.go"
