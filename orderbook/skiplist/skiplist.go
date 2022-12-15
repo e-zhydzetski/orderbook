@@ -68,15 +68,16 @@ func (s *SkipList[K, V]) Set(key K, value V) {
 
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
-func (s *SkipList[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) {
+func (s *SkipList[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) bool {
 	if len(s.head.Next) == 0 {
-		return
+		return false
 	}
 
+	var action memtable.IteratorAction
 	for s.head.Next[0] != nil {
 		cur := s.head.Next[0]
 
-		action := f(cur.Key, &cur.Value)
+		action = f(cur.Key, &cur.Value)
 		if action == memtable.IAStop {
 			break
 		}
@@ -86,4 +87,6 @@ func (s *SkipList[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) 
 
 		s.nodePool.Put(cur)
 	}
+
+	return action == memtable.IARemoveAndContinue
 }

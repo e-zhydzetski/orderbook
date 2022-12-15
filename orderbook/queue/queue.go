@@ -44,10 +44,12 @@ func (q *Queue[T]) Add(val T) {
 	q.Head = q.Head.Next
 }
 
-func (q *Queue[T]) Iterate(f func(val *T) memtable.IteratorAction) {
+func (q *Queue[T]) Iterate(f func(val *T) memtable.IteratorAction) bool {
+	var action memtable.IteratorAction
+
 	cur := q.Tail
 	for cur != nil {
-		action := f(&cur.Data)
+		action = f(&cur.Data)
 		if action == memtable.IAStop {
 			break
 		}
@@ -60,4 +62,6 @@ func (q *Queue[T]) Iterate(f func(val *T) memtable.IteratorAction) {
 		// and get next
 		cur = q.Tail
 	}
+
+	return action == memtable.IARemoveAndContinue
 }

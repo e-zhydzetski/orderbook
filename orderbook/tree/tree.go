@@ -110,14 +110,17 @@ func (t *Tree[K, V]) iter(node *Node[K, V], f func(key K, val *V) memtable.Itera
 
 // Iterate tree elements from min to max key, next element may be accessed only after current remove
 // element value is mutable
-func (t *Tree[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) {
+func (t *Tree[K, V]) Iterate(f func(key K, val *V) memtable.IteratorAction) bool {
 	if t.root == nil {
-		return
+		return false
 	}
 
-	rem, _ := t.iter(t.root, f)
+	rem, cont := t.iter(t.root, f)
 	if rem {
 		t.nodePool.Put(t.root)
 		t.root = nil
+		return false
 	}
+
+	return cont
 }
