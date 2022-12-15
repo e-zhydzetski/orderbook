@@ -1,10 +1,11 @@
 package orderbook
 
 import (
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
-	"github.com/e-zhydzetski/strips-tt/orderbook/tree"
 	"strings"
 	"time"
+
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/strips-tt/orderbook/skiplist"
 
 	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
 )
@@ -45,11 +46,11 @@ func highToLowPrice(a Order, b Order) int {
 
 func NewOrderBook() *OrderBook {
 	return &OrderBook{
-		// limitBids:  skiplist.New[Order, Value](10, highToLowPrice),
-		limitBids: tree.New[Order, Value](highToLowPrice),
+		limitBids: skiplist.New[Order, Value](10, highToLowPrice),
+		// limitBids: tree.New[Order, Value](highToLowPrice),
 
-		// limitAsks:  skiplist.New[Order, Value](10, lowToHighPrice),
-		limitAsks: tree.New[Order, Value](lowToHighPrice),
+		limitAsks: skiplist.New[Order, Value](10, lowToHighPrice),
+		// limitAsks: tree.New[Order, Value](lowToHighPrice),
 
 		marketBids: queue.New[Order](),
 		marketAsks: queue.New[Order](),
@@ -182,7 +183,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 	}
 	o.limitAsks.Iterate(func(order Order, remainedValue *Value) memtable.IteratorAction {
 		if !price.IsMarket() {
-			if order.Price < price {
+			if order.Price > price {
 				return memtable.IAStop
 			}
 		}
