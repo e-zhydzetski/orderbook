@@ -1,72 +1,58 @@
 package orderbook
 
 import (
-	"strings"
 	"time"
 
 	"github.com/e-zhydzetski/strips-tt/orderbook/skiplist"
 
 	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
-	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
 )
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
-func lowToHighPrice(a Order, b Order) int {
-	if a.Price < b.Price {
+func lowToHighPrice(a PriceLimit, b PriceLimit) int {
+	if a < b {
 		return -1
 	}
-	if a.Price > b.Price {
+	if a > b {
 		return 1
 	}
-	if a.AcceptTime.Before(b.AcceptTime) {
-		return -1
-	}
-	if a.AcceptTime.After(b.AcceptTime) {
-		return 1
-	}
-	return strings.Compare(a.ID, b.ID)
+	return 0
 }
 
 // The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
-func highToLowPrice(a Order, b Order) int {
-	if a.Price > b.Price {
+func highToLowPrice(a PriceLimit, b PriceLimit) int {
+	if a > b {
 		return -1
 	}
-	if a.Price < b.Price {
+	if a < b {
 		return 1
 	}
-	if a.AcceptTime.Before(b.AcceptTime) {
-		return -1
-	}
-	if a.AcceptTime.After(b.AcceptTime) {
-		return 1
-	}
-	return strings.Compare(a.ID, b.ID)
+	return 0
 }
 
 func NewOrderBook() *OrderBook {
 	return &OrderBook{
-		limitBids: skiplist.New[Order, Value](10, highToLowPrice),
+		limitBids: skiplist.New[PriceLimit, OrderGroup](10, highToLowPrice),
 		// limitBids: tree.New[Order, Value](highToLowPrice),
 
-		limitAsks: skiplist.New[Order, Value](10, lowToHighPrice),
+		limitAsks: skiplist.New[PriceLimit, OrderGroup](10, lowToHighPrice),
 		// limitAsks: tree.New[Order, Value](lowToHighPrice),
 
-		marketBids: queue.New[Order](),
-		marketAsks: queue.New[Order](),
+		marketBids: NewOrderGroup(),
+		marketAsks: NewOrderGroup(),
 		events:     NewEvents(100),
 	}
 }
 
 type OrderBook struct {
-	limitBids  memtable.MemTable[Order, Value] // TODO tree of queues, or skip list
-	limitAsks  memtable.MemTable[Order, Value] // TODO tree of queues, or skip list
-	marketBids memtable.Queue[Order]
-	marketAsks memtable.Queue[Order]
+	limitBids  memtable.MemTable[PriceLimit, OrderGroup]
+	limitAsks  memtable.MemTable[PriceLimit, OrderGroup]
+	marketBids OrderGroup
+	marketAsks OrderGroup
 	events     *Events
 }
 
-//nolint:dupl // TODO refactor
+//nolint:dupl,funlen // TODO refactor
 func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 	now := time.Now()
 	o.events.Emit(OrderAccepted{
@@ -76,9 +62,15 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketBids.Iterate(func(order *Order) memtable.IteratorAction {
+
+	// match with market orders
+	o.marketBids.Orders.Iterate(func(order *Order) memtable.IteratorAction {
+		if value == 0 {
+			return memtable.IAStop
+		}
 		if order.Value > value {
 			order.Value -= value
+			o.marketBids.TotalValue -= value
 			value = 0
 			o.events.Emit(OrderChanged{
 				ID:    order.ID,
@@ -88,6 +80,7 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		}
 		// order.Value <= value
 		value -= order.Value
+		o.marketBids.TotalValue -= order.Value
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
@@ -99,28 +92,42 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitBids.Iterate(func(order Order, remainedValue *Value) memtable.IteratorAction {
-		if !price.IsMarket() {
-			if order.Price < price {
+
+	// match with limit orders
+	o.limitBids.Iterate(func(_ PriceLimit, orderGroup *OrderGroup) memtable.IteratorAction {
+		cont := orderGroup.Orders.Iterate(func(order *Order) memtable.IteratorAction {
+			if !price.IsMarket() {
+				if order.Price < price {
+					return memtable.IAStop
+				}
+			}
+			if value == 0 {
 				return memtable.IAStop
 			}
+			if order.Value > value {
+				order.Value -= value
+				orderGroup.TotalValue -= value
+				value = 0
+				o.events.Emit(OrderChanged{
+					ID:    order.ID,
+					Value: order.Value,
+				})
+				return memtable.IAStop
+			}
+			// remainedValue <= value
+			value -= order.Value
+			orderGroup.TotalValue -= order.Value
+			o.events.Emit(OrderExecuted{
+				ID: order.ID,
+			})
+			return memtable.IARemoveAndContinue
+		})
+
+		if cont {
+			return memtable.IARemoveAndContinue
 		}
 
-		if *remainedValue > value {
-			*remainedValue -= value
-			value = 0
-			o.events.Emit(OrderChanged{
-				ID:    order.ID,
-				Value: order.Value,
-			})
-			return memtable.IAStop
-		}
-		// remainedValue <= value
-		value -= *remainedValue
-		o.events.Emit(OrderExecuted{
-			ID: order.ID,
-		})
-		return memtable.IARemoveAndContinue
+		return memtable.IAStop
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{
@@ -128,11 +135,11 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
+
 	o.events.Emit(OrderChanged{
 		ID:    id,
 		Value: value,
 	})
-
 	newOrder := Order{
 		ID:         id,
 		Type:       OTAsk,
@@ -141,16 +148,23 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		AcceptTime: now,
 	}
 	if price.IsMarket() {
-		o.marketAsks.PushHead(newOrder)
+		o.marketAsks.Orders.PushHead(newOrder)
+		o.marketAsks.TotalValue += newOrder.Value
 	} else {
-		o.limitAsks.Upsert(newOrder, func() Value {
-			return value
-		}, nil)
+		o.limitAsks.Upsert(price, func() OrderGroup {
+			og := NewOrderGroup()
+			og.Orders.PushHead(newOrder)
+			og.TotalValue += newOrder.Value
+			return og
+		}, func(og *OrderGroup) {
+			og.Orders.PushHead(newOrder)
+			og.TotalValue += newOrder.Value
+		})
 	}
 	// o.events.PrintAll()
 }
 
-//nolint:dupl // TODO refactor
+//nolint:dupl,funlen // TODO refactor
 func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 	now := time.Now()
 	o.events.Emit(OrderAccepted{
@@ -160,9 +174,15 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		Price:      price,
 		AcceptTime: now,
 	})
-	o.marketAsks.Iterate(func(order *Order) memtable.IteratorAction {
+
+	// match with market orders
+	o.marketAsks.Orders.Iterate(func(order *Order) memtable.IteratorAction {
+		if value == 0 {
+			return memtable.IAStop
+		}
 		if order.Value > value {
 			order.Value -= value
+			o.marketAsks.TotalValue -= value
 			value = 0
 			o.events.Emit(OrderChanged{
 				ID:    order.ID,
@@ -172,6 +192,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		}
 		// order.Value <= value
 		value -= order.Value
+		o.marketAsks.TotalValue -= order.Value
 		o.events.Emit(OrderExecuted{
 			ID: order.ID,
 		})
@@ -183,28 +204,42 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
-	o.limitAsks.Iterate(func(order Order, remainedValue *Value) memtable.IteratorAction {
-		if !price.IsMarket() {
-			if order.Price > price {
+
+	// match with limit orders
+	o.limitAsks.Iterate(func(_ PriceLimit, orderGroup *OrderGroup) memtable.IteratorAction {
+		cont := orderGroup.Orders.Iterate(func(order *Order) memtable.IteratorAction {
+			if !price.IsMarket() {
+				if order.Price > price {
+					return memtable.IAStop
+				}
+			}
+			if value == 0 {
 				return memtable.IAStop
 			}
+			if order.Value > value {
+				order.Value -= value
+				orderGroup.TotalValue -= value
+				value = 0
+				o.events.Emit(OrderChanged{
+					ID:    order.ID,
+					Value: order.Value,
+				})
+				return memtable.IAStop
+			}
+			// remainedValue <= value
+			value -= order.Value
+			orderGroup.TotalValue -= order.Value
+			o.events.Emit(OrderExecuted{
+				ID: order.ID,
+			})
+			return memtable.IARemoveAndContinue
+		})
+
+		if cont {
+			return memtable.IARemoveAndContinue
 		}
 
-		if *remainedValue > value {
-			*remainedValue -= value
-			value = 0
-			o.events.Emit(OrderChanged{
-				ID:    order.ID,
-				Value: order.Value,
-			})
-			return memtable.IAStop
-		}
-		// remainedValue <= value
-		value -= *remainedValue
-		o.events.Emit(OrderExecuted{
-			ID: order.ID,
-		})
-		return memtable.IARemoveAndContinue
+		return memtable.IAStop
 	})
 	if value == 0 {
 		o.events.Emit(OrderExecuted{
@@ -212,11 +247,11 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		})
 		return
 	}
+
 	o.events.Emit(OrderChanged{
 		ID:    id,
 		Value: value,
 	})
-
 	newOrder := Order{
 		ID:         id,
 		Type:       OTBid,
@@ -225,11 +260,18 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		AcceptTime: now,
 	}
 	if price.IsMarket() {
-		o.marketBids.PushHead(newOrder)
+		o.marketBids.Orders.PushHead(newOrder)
+		o.marketBids.TotalValue += newOrder.Value
 	} else {
-		o.limitBids.Upsert(newOrder, func() Value {
-			return value
-		}, nil)
+		o.limitBids.Upsert(price, func() OrderGroup {
+			og := NewOrderGroup()
+			og.Orders.PushHead(newOrder)
+			og.TotalValue += newOrder.Value
+			return og
+		}, func(og *OrderGroup) {
+			og.Orders.PushHead(newOrder)
+			og.TotalValue += newOrder.Value
+		})
 	}
 	// o.events.PrintAll()
 }

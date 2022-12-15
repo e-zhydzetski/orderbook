@@ -2,6 +2,9 @@ package orderbook
 
 import (
 	"time"
+
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
 )
 
 type Value uint64
@@ -27,4 +30,16 @@ type Order struct {
 	Value      Value
 	Price      PriceLimit
 	AcceptTime time.Time
+}
+
+func NewOrderGroup() OrderGroup {
+	return OrderGroup{
+		TotalValue: 0,
+		Orders:     queue.New[Order](),
+	}
+}
+
+type OrderGroup struct {
+	TotalValue Value
+	Orders     memtable.Queue[Order]
 }
