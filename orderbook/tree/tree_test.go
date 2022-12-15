@@ -24,7 +24,7 @@ func TestTree(t *testing.T) {
 		return memtable.IAStop
 	})
 
-	tree.Set(-1, -1)
+	tree.Upsert(-1, func() int { return -1 }, nil)
 
 	var vals []int
 	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
@@ -34,11 +34,15 @@ func TestTree(t *testing.T) {
 	})
 	require.Equal(t, []int{-10}, vals)
 
-	tree.Set(-2, -2)
-	tree.Set(-3, -3)
-	tree.Set(1, 1)
-	tree.Set(3, 3)
-	tree.Set(2, 2)
+	tree.Upsert(-1, nil, func(val *int) {
+		*val *= 10
+	})
+
+	tree.Upsert(-2, func() int { return -2 }, nil)
+	tree.Upsert(-3, func() int { return -3 }, nil)
+	tree.Upsert(1, func() int { return 1 }, nil)
+	tree.Upsert(3, func() int { return 3 }, nil)
+	tree.Upsert(2, func() int { return 2 }, nil)
 
 	vals = vals[:0]
 	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
@@ -52,7 +56,7 @@ func TestTree(t *testing.T) {
 		vals = append(vals, *val)
 		return memtable.IARemoveAndContinue
 	})
-	require.Equal(t, []int{-3, -2, -10, 1, 2, 3}, vals) // value -10 has -1 key, order by key
+	require.Equal(t, []int{-3, -2, -100, 1, 2, 3}, vals) // value -10 has -1 key, order by key
 
 	tree.Iterate(func(key int, val *int) memtable.IteratorAction {
 		require.Fail(t, "tree should be empty")
@@ -124,7 +128,7 @@ func BenchmarkSet(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				x := next()
-				tree.Set(x, x)
+				tree.Upsert(x, func() int { return x }, nil)
 			}
 		})
 	}

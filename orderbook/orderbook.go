@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
 	"github.com/e-zhydzetski/strips-tt/orderbook/skiplist"
 
+	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
 	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
 )
 

@@ -30,11 +30,11 @@ type Node[K any, V any] struct {
 	Right *Node[K, V]
 }
 
-func (t *Tree[K, V]) Set(key K, value V) {
+func (t *Tree[K, V]) Upsert(key K, onInsert func() V, onUpdate func(val *V)) {
 	newNode := func() *Node[K, V] {
 		nn := t.nodePool.Get().(*Node[K, V])
 		nn.Key = key
-		nn.Value = value
+		nn.Value = onInsert()
 		nn.Right = nil
 		nn.Left = nil
 		return nn
@@ -60,7 +60,8 @@ func (t *Tree[K, V]) Set(key K, value V) {
 			}
 			cur = cur.Right
 		default:
-			return // duplicate key, skip
+			onUpdate(&cur.Value)
+			return
 		}
 	}
 }
