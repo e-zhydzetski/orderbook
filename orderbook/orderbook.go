@@ -31,25 +31,30 @@ func highToLowPrice(a PriceLimit, b PriceLimit) int {
 }
 
 func NewOrderBook() *OrderBook {
+	orderGroupFactory := NewOrderGroupFactoryFunc()
 	return &OrderBook{
-		limitBids: skiplist.New[PriceLimit, OrderGroup](10, highToLowPrice),
+		orderGroupFactory: orderGroupFactory,
+		limitBids:         skiplist.New[PriceLimit, OrderGroup](10, highToLowPrice),
 		// limitBids: tree.New[Order, Value](highToLowPrice),
 
 		limitAsks: skiplist.New[PriceLimit, OrderGroup](10, lowToHighPrice),
 		// limitAsks: tree.New[Order, Value](lowToHighPrice),
 
-		marketBids: NewOrderGroup(),
-		marketAsks: NewOrderGroup(),
+		marketBids: orderGroupFactory(),
+		marketAsks: orderGroupFactory(),
 		events:     NewEvents(100),
 	}
 }
 
 type OrderBook struct {
+	orderGroupFactory func() OrderGroup
+
 	limitBids  memtable.MemTable[PriceLimit, OrderGroup]
 	limitAsks  memtable.MemTable[PriceLimit, OrderGroup]
 	marketBids OrderGroup
 	marketAsks OrderGroup
-	events     *Events
+
+	events *Events
 }
 
 //nolint:dupl,funlen // TODO refactor
@@ -152,7 +157,7 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		o.marketAsks.TotalValue += newOrder.Value
 	} else {
 		o.limitAsks.Upsert(price, func() OrderGroup {
-			og := NewOrderGroup()
+			og := o.orderGroupFactory()
 			og.Orders.PushHead(newOrder)
 			og.TotalValue += newOrder.Value
 			return og
@@ -264,7 +269,7 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		o.marketBids.TotalValue += newOrder.Value
 	} else {
 		o.limitBids.Upsert(price, func() OrderGroup {
-			og := NewOrderGroup()
+			og := o.orderGroupFactory()
 			og.Orders.PushHead(newOrder)
 			og.TotalValue += newOrder.Value
 			return og

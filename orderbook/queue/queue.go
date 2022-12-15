@@ -11,14 +11,22 @@ type Node[T any] struct {
 	Next *Node[T]
 }
 
-func New[T any]() *Queue[T] {
-	return &Queue[T]{
-		nodePool: &sync.Pool{
-			New: func() any {
-				return new(Node[T])
-			},
+// NewFactoryFunc returns queue factory with common node pool
+func NewFactoryFunc[T any]() func() *Queue[T] {
+	nodePool := &sync.Pool{
+		New: func() any {
+			return new(Node[T])
 		},
 	}
+	return func() *Queue[T] {
+		return &Queue[T]{
+			nodePool: nodePool,
+		}
+	}
+}
+
+func New[T any]() *Queue[T] {
+	return NewFactoryFunc[T]()()
 }
 
 type Queue[T any] struct {

@@ -32,10 +32,14 @@ type Order struct {
 	AcceptTime time.Time
 }
 
-func NewOrderGroup() OrderGroup {
-	return OrderGroup{
-		TotalValue: 0,
-		Orders:     queue.New[Order](),
+// NewOrderGroupFactoryFunc returns order group factory with common queue factory
+func NewOrderGroupFactoryFunc() func() OrderGroup {
+	queueFactory := queue.NewFactoryFunc[Order]()
+	return func() OrderGroup {
+		return OrderGroup{
+			TotalValue: 0,
+			Orders:     queueFactory(),
+		}
 	}
 }
 
