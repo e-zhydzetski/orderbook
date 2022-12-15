@@ -141,9 +141,11 @@ func (o *OrderBook) Ask(id string, value Value, price PriceLimit) {
 		AcceptTime: now,
 	}
 	if price.IsMarket() {
-		o.marketAsks.Add(newOrder)
+		o.marketAsks.PushHead(newOrder)
 	} else {
-		o.limitAsks.Set(newOrder, value)
+		o.limitAsks.Upsert(newOrder, func() Value {
+			return value
+		}, nil)
 	}
 	// o.events.PrintAll()
 }
@@ -223,9 +225,11 @@ func (o *OrderBook) Bid(id string, value Value, price PriceLimit) {
 		AcceptTime: now,
 	}
 	if price.IsMarket() {
-		o.marketBids.Add(newOrder)
+		o.marketBids.PushHead(newOrder)
 	} else {
-		o.limitBids.Set(newOrder, value)
+		o.limitBids.Upsert(newOrder, func() Value {
+			return value
+		}, nil)
 	}
 	// o.events.PrintAll()
 }

@@ -14,7 +14,7 @@ func TestQueue(t *testing.T) {
 		return memtable.IAStop
 	})
 
-	q.Add(-1)
+	q.PushHead(-1)
 
 	var vals []int
 	q.Iterate(func(val *int) memtable.IteratorAction {
@@ -24,11 +24,11 @@ func TestQueue(t *testing.T) {
 	})
 	require.Equal(t, []int{-10}, vals)
 
-	q.Add(-2)
-	q.Add(-3)
-	q.Add(1)
-	q.Add(3)
-	q.Add(2)
+	q.PushHead(-2)
+	q.PushHead(-3)
+	q.PushHead(1)
+	q.PushHead(3)
+	q.PushHead(2)
 
 	vals = vals[:0]
 	q.Iterate(func(val *int) memtable.IteratorAction {

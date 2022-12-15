@@ -27,7 +27,7 @@ type Queue[T any] struct {
 	nodePool *sync.Pool
 }
 
-func (q *Queue[T]) Add(val T) {
+func (q *Queue[T]) PushHead(val T) {
 	newNode := func() *Node[T] {
 		nn := q.nodePool.Get().(*Node[T])
 		nn.Data = val
