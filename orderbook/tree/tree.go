@@ -49,18 +49,24 @@ func (t *Tree[K, V]) Upsert(key K, onInsert func() V, onUpdate func(val *V)) {
 		switch t.compareFunc(key, cur.Key) {
 		case -1:
 			if cur.Left == nil {
-				cur.Left = newNode()
+				if onInsert != nil {
+					cur.Left = newNode()
+				}
 				return
 			}
 			cur = cur.Left
 		case 1:
 			if cur.Right == nil {
-				cur.Right = newNode()
+				if onInsert != nil {
+					cur.Right = newNode()
+				}
 				return
 			}
 			cur = cur.Right
-		default:
-			onUpdate(&cur.Value)
+		default: // node found
+			if onUpdate != nil {
+				onUpdate(&cur.Value)
+			}
 			return
 		}
 	}
