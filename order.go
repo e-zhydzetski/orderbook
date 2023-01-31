@@ -3,8 +3,8 @@ package orderbook
 import (
 	"time"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
-	"github.com/e-zhydzetski/strips-tt/orderbook/queue"
+	"github.com/e-zhydzetski/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/queue"
 )
 
 type Value uint64
