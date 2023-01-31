@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/memtable"
 )
 
 func New[K any, V any](maxHeight int, compareFunc func(a K, b K) int) *SkipList[K, V] {

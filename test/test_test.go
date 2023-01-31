@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/e-zhydzetski/strips-tt/orderbook"
+	"github.com/e-zhydzetski/orderbook"
 )
 
 func BenchmarkOrderbook(b *testing.B) {

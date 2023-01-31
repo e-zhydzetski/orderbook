@@ -1,7 +1,7 @@
 package tree
 
 import (
-	"github.com/e-zhydzetski/strips-tt/orderbook/memtable"
+	"github.com/e-zhydzetski/orderbook/memtable"
 	"math/rand"
 	"testing"
 	"time"

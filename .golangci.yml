@@ -15,7 +15,7 @@ linters-settings:
   lll:
     line-length: 300
   goimports:
-    local-prefixes: "github.com/e-zhydzetski/strips-tt/orderbook"
+    local-prefixes: "github.com/e-zhydzetski/orderbook"
   gocritic:
     enabled-tags:
       - diagnostic
